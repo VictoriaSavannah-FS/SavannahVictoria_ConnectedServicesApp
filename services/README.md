@@ -15,4 +15,11 @@ They will handle the API itegration logic, manage routes, dataFetching and cachi
 - Firebase Auth
 - DAta management
 
-### The client-side helpers that call API"s and Firebase
+- The client-side helpers that call API"s and Firebase
+
+### Resources:
+
+- [https://firebase.google.com/support/dynamic-links-faq]
+- [https://firebase.google.com/docs/projects/dev-workflows/general-best-practices]
+- [https://firebase.google.com/docs/ios/setup#create-firebase-project]
+- [https://docs.expo.dev/guides/using-firebase/]
