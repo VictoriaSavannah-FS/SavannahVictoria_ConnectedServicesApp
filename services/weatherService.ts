@@ -1,6 +1,13 @@
 import createApiClient from "./apiClient";
-import { config } from "../config/environment";
+import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+
+//deinfe the baseURL -> where fetching the data
+const WEATHER_API_KEY = Constants.expoConfig?.extra?.weatherApiKey;
+
+//target API ednpoint@openWeather
+const WEATHER_BASE_URL = "https://api.openweathermap.org/data/3.0/onecall";
+
 class WeatherService {
   constructor() {
     this.client = createApiClient(config.WEATHER_BASE_URL);

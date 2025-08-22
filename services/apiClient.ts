@@ -1,7 +1,28 @@
-import axios from "axios";
+import axios, { AxiosRequestConfig } from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
+import { getAuth } from "firebase/auth";
+// import { firebaseApp } from "@/services/firebaseConfig";
 // Base API client configuration
+
+/**
+ * // services/apiClient.ts (pseudo)
+
+IMPORT axios, AsyncStorage, Constants
+
+FUNCTION createApiClient(baseURL, options?):
+  client = axios.create({ baseURL, timeout, headers })
+  client.request.interceptors:
+    read @auth_token from AsyncStorage -> add Authorization if present
+    console.log method/url
+  client.response.interceptors:
+    log status/url
+    normalize common error shapes (network / 4xx / 5xx)
+  RETURN client
+
+EXPORT default createApiClient
+ */
+
 const createApiClient = (baseURL, options = {}) => {
   const client = axios.create({
     baseURL,
