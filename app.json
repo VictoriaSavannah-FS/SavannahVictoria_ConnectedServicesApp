@@ -15,7 +15,10 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "We use your location to show local weather and a map."
+        "NSLocationWhenInUseUsageDescription": "We use your location to show local weather and a map.",
+        "NSCameraUsageDescription": "We use your camera to take photos and scan QR codes.",
+        "NSPhotoLibraryAddUsageDescription": "We save your photos to your library.",
+        "NSPhotoLibraryUsageDescription": "We access your photo library to show saved photos."
       }
     },
     "android": {
@@ -30,6 +33,7 @@
     },
     "extra": {
       "weatherApiKey": "71562a9af4dbd9c2587ec4e604d181a6"
-    }
+    },
+    "plugins": ["expo-barcode-scanner", "expo-camera"]
   }
 }
