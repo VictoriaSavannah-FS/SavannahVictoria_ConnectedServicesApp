@@ -228,30 +228,38 @@ export default function CameraScreen() {
       {/* Phot URI / metada dispay --- */}
       {lastUri ? (
         <View style={{ alignItems: "center", padding: 12, gap: 8 }}>
-          {/* reder image */}
+          {/* render photo thumbnail */}
           <Image
             source={{ uri: lastUri }}
-            style={{ width: 100, height: 100, borderRadius: 8 }}
+            style={{ width: 120, height: 120, borderRadius: 10 }}
           />
-          {/* Text/metad info */}
+
+          {/* file URI path */}
           <Text numberOfLines={1} style={styles.uri}>
             {lastUri}
           </Text>
-          {/* ADd @timeStamp + if/else*/}
-          <Text style={{ color: "#333" }}>Taken: {takenAt ?? "-"}</Text>
-          {/* @GPS COords -- if/else */}
-          <Text style={{ color: "#333" }}>
-            GPS:
-            {gps
-              ? // limit coord#'s
-                `${gps.latitude.toFixed(5)}, ${gps.longitude.toFixed(5)}`
-              : "—"}
-          </Text>
-          {/* MAPBOX RENDERED!===== else/ null */}
+
+          {/* show extracted EXIF metadata */}
+          <View style={{ marginTop: 8, alignItems: "center" }}>
+            <Text style={{ fontWeight: "700" }}>Photo Metadata</Text>
+
+            {/* show timestamp if present */}
+            <Text style={{ color: "#333" }}>Taken: {takenAt ?? "—"}</Text>
+
+            {/* show GPS coords (rounded) if present */}
+            <Text style={{ color: "#333" }}>
+              GPS:{" "}
+              {gps
+                ? `${gps.latitude.toFixed(5)}, ${gps.longitude.toFixed(5)}`
+                : "—"}
+            </Text>
+          </View>
+
+          {/* Mapbox static map preview (only if GPS exists) */}
           {mapUrl ? (
             <Image
               source={{ uri: mapUrl }}
-              style={{ width: 300, height: 180, borderRadius: 8 }}
+              style={{ width: 280, height: 160, borderRadius: 10 }}
               resizeMode="cover"
             />
           ) : (
