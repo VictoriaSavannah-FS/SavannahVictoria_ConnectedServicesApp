@@ -1,18 +1,28 @@
-// import React, { useEffect, useState } from "react";
-// import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-// // import location ref. env
-// import * as Location from "expo-location";
-// // constanstn to read OpenWeaterAPi--
-// import Constants from "expo-constants";
-// // import createApiClient from "../services/apiClient";
 // import weatherService from "../services/weatherService";
 import React, { useEffect, useState } from "react";
-import { View, Text, ActivityIndicator, Button, Image } from "react-native";
-import * as Location from "expo-location";
+import {
+  View,
+  Text,
+  ActivityIndicator,
+  Button,
+  Image,
+  StyleSheet,
+  Platform,
+} from "react-native";
+// import * as Location from "expo-location"; will nto use - will use coords isntead
 import Constants from "expo-constants";
 
 // impeoer maps --nevermidn - wokrs o IOS only / not webb
 // import { AppleMaps, GoogleMaps } from "expo-maps";
+// /import service/locaiton servci
+import { getUserLocation, type Coords } from "../services/location";
+
+// Mapbox helpers / logic- ---
+import {
+  staticMapUrl,
+  reverseGeocode,
+  type RevGeoCodeRes,
+} from "../services/mapBoxService";
 
 // DEfine Tyoes
 type Weather = {
@@ -26,71 +36,21 @@ type Weather = {
 const iconUrl = (icon: string) =>
   `https://openweathermap.org/img/wn/${icon}@2x.png`;
 
-// /***EXAMPLE API RES
-//  *
-// {
-//    "coord": {
-//       "lon": 7.367,
-//       "lat": 45.133
-//    },
-//    "weather": [
-//       {
-//          "id": 501,
-//          "main": "Rain",
-//          "description": "moderate rain",
-//          "icon": "10d"
-//       }
-//    ],
-//    "base": "stations",
-//    "main": {
-//       "temp": 284.2,
-//       "feels_like": 282.93,
-//       "temp_min": 283.06,
-//       "temp_max": 286.82,
-//       "pressure": 1021,
-//       "humidity": 60,
-//       "sea_level": 1021,
-//       "grnd_level": 910
-//    },
-//    "visibility": 10000,
-//    "wind": {
-//       "speed": 4.09,
-//       "deg": 121,
-//       "gust": 3.47
-//    },
-//    "rain": {
-//       "1h": 2.73
-//    },
-//    "clouds": {
-//       "all": 83
-//    },
-//    "dt": 1726660758,
-//    "sys": {
-//       "type": 1,
-//       "id": 6736,
-//       "country": "IT",
-//       "sunrise": 1726636384,
-//       "sunset": 1726680975
-//    },
-//    "timezone": 7200,
-//    "id": 3165523,
-//    "name": "Province of Turin",
-//    "cod": 200
-// }
-
 export default function MapScreen() {
-  /**states
-     *DECLARE loading (bool)
-  DECLARE error (string | null)
-  DECLARE coords ({ latitude, longitude } | null)
-  DECLARE weather (Weather | null)
-    */
+  /**state types
+   */
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // EXACt COOrds
   const [coords, setCoords] = useState<{
     latitude: number;
     longitude: number;
   } | null>(null);
+  // New MapRender sates
+  const [place, setPlace] = useState<RevGeoCodeRes>(null); // reverse geocode
+
+  const [mapUrl, setMapUrl] = useState<string | null>(null); ///stsic IMG
+
   const [weather, setWeather] = useState<Weather | null>(null);
 
   // ---- helpers -----------
@@ -117,24 +77,13 @@ export default function MapScreen() {
 
   // Req. fetchWeather ---------
   const getWeather = async (lat: number, lon: number) => {
-    //   return the fetchedc Data
-    // const { lat, lon } = await reqLocation();
-    // //   appi call - https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={API key} (oW. Docs / exmpale)
-    // const res = await fetch(
-    //   `https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={API key}`
-    // );
-    // const wthrData = await res.json();
-    // console.log(wthrData);
-    // Pass key to retrive info/data @Constatns --> NO WAIT on cosntants
     const key = Constants.expoConfig?.extra?.weatherApiKey;
     if (!key)
       throw new Error(
         "WHoops! oh no... missing your OpenWeather API key in app.json 'extra' - double-check."
       );
-    // const url = `https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={API key}`; --> chanegd ot imperical =f X metric=c
 
     const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${key}&units=imperial`;
-    // //OpnWth: Docs fetch xmple:https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={API key}
     // respo --> axios GEt
     const res = await fetch(url);
     // IF !ok => THROW with status
@@ -143,6 +92,26 @@ export default function MapScreen() {
     const json = (await res.json()) as Weather;
     setWeather(json);
   };
+
+  // ---- effects ---- run@mount
+  useEffect(() => {
+    // @mount
+    console.log(
+      "Wheather Key?",
+      Constants.expoConfig?.extra?.weatherApiKey
+        ? "Loaded ✅- Yes!"
+        : "Missing Key ❌ 🔑"
+    );
+    console.log(
+      "Mapbox token present?",
+      !!Constants.expoConfig?.extra?.mapboxToken
+    );
+    console.log(
+      "Weather key present?",
+      !!Constants.expoConfig?.extra?.weatherApiKey
+    );
+    loadData();
+  }, []);
 
   // LOAD STATE as new Data gets laoded -------
 
@@ -153,10 +122,25 @@ export default function MapScreen() {
     //    trycatch blcok for laoding data / graceful eror hadnling
     try {
       // fetch location -- from @reqLoc..
-      const { latitude, longitude } = await reqLocation();
+      // location service
+      const { latitude, longitude } = await getUserLocation();
+      setCoords({ latitude, longitude }); //update state w/ data
 
-      // update state w/ data=> set coordinate
-      setCoords({ latitude, longitude });
+      /**INSET the MapBOx Map - satic  */
+      const url = staticMapUrl({
+        latitude: latitude,
+        longitude: longitude,
+        zoom: 13,
+        width: 600,
+        height: 360,
+      });
+      setMapUrl(url);
+
+      // ------ APply REverseGEOCODe ------
+      //   const addy = await reverseGeocode(setCoords);//SETTER - wrongX
+      const addy = await reverseGeocode({ latitude, longitude }); //SETTER - wrongX
+      setPlace(addy);
+      //   weather fet-----
       await getWeather(latitude, longitude);
     } catch (error: any) {
       setError(
@@ -167,15 +151,6 @@ export default function MapScreen() {
     }
 
     // ---- UI render branches ---- IF loading vs ERROR----
-
-    //   RENDER:
-    //   Title "Your Location"
-    //   IF you have a Mapbox public key:
-    //     show static map image using coords
-    //   ELSE:
-    //     show simple box with lat/lon text
-    //   Show basic weather block (city, country, icon, temp, description, feels-like)
-    //   "Refresh" button → calls load()
 
     //  EXPORT MapScreen*/
 
@@ -220,21 +195,10 @@ export default function MapScreen() {
         </View>
       );
   };
-  // ---- effects ----
-  useEffect(() => {
-    // @mount
-    console.log(
-      "Wheather Key?",
-      Constants.expoConfig?.extra?.weatherApiKey
-        ? "Loaded ✅- Yes!"
-        : "Missing Key ❌ 🔑"
-    );
-    loadData();
-  }, []);
+  // --------- MAIUN UI RENDER ----------
   return (
     <View style={{ padding: 24, alignItems: "center", gap: 12 }}>
       <Text style={{ fontSize: 20, fontWeight: "700" }}> 📍 Your Location</Text>
-
       {coords && (
         <View
           style={{
@@ -250,7 +214,27 @@ export default function MapScreen() {
           </Text>
         </View>
       )}
-
+      {/* ADD --- MaPBOX Static IMG render  */}
+      {mapUrl ? (
+        <Image
+          source={{ uri: mapUrl }}
+          // types - wrong
+          //   style={{ width: "80%", height: "200", borderRadius: "10" }}
+          style={{ width: 80, height: 200, borderRadius: 10 }}
+          //   resizeMethod="cover"
+          resizeMode="cover"
+        />
+      ) : (
+        <View style={[styles.card, { alignItems: "center" }]}>
+          <Text>Map unavailable (check your Mapbox token @expo.extra)</Text>
+        </View>
+      )}
+      {/* --- ADD HUMAN READBLE ADDY info ---- */}
+      <View style={styles.card}>
+        <Text style={styles.h2}>Nearest Place</Text>
+        <Text style={{ color: "#333" }}>{place?.placeName ?? "—"}</Text>
+      </View>
+      {/* WEHATER RENDER --- */}
       {weather && (
         <View style={{ alignItems: "center", gap: 6 }}>
           <Text style={{ fontSize: 18, fontWeight: "600" }}>
@@ -271,10 +255,44 @@ export default function MapScreen() {
           </Text>
         </View>
       )}
-
       <Button title="Refresh" onPress={loadData} />
+      {/* WEBB platform == compptibility NOTe ---  */}
+      {Platform.OS === "web" && (
+        <Text style={styles.webNote}>
+          Web tip: Static map works everywhere. For interactive panning/zooming,
+          you’d add Mapbox GL JS separately — not required for this assignment.
+        </Text>
+      )}
     </View>
   );
 }
+
+// STYLES -------
+
+const styles = StyleSheet.create({
+  //Container ---
+  centerScreen: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    padding: 16,
+  },
+  //   Text/mssges----
+  loadingText: { color: "#444", textAlign: "center" },
+  errorTitle: { fontWeight: "700", marginBottom: 8 },
+  errorMsg: { color: "#666", textAlign: "center", marginBottom: 10 },
+  h1: { fontSize: 20, fontWeight: "700" },
+  h2: { fontSize: 16, fontWeight: "600", marginBottom: 4 },
+  //   CARd ---
+  card: {
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    backgroundColor: "#fff",
+  },
+  webNote: { fontSize: 12, color: "blue", marginTop: 8 },
+});
 
 // https://docs.expo.dev/versions/latest/sdk/maps/

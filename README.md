@@ -18,3 +18,6 @@ Repo for a comprehensive mobile application using Expo that demonstrates the cor
 - [https://docs.mapbox.com/api/maps/static-images/]
 - [https://docs.mapbox.com/api/search/geocoding/]
 - [https://docs.mapbox.com/api/search/geocoding/#geocoding-response-object]
+- [https://github.com/expo/fyi/blob/main/firebase-js-auth-setup.md]
+- [https://sasandasaumya.medium.com/building-a-qr-code-scanner-with-react-native-expo-df8e8f9e4c08]
+- [https://sasandasaumya.medium.com/react-native-expo-maps-app-with-user-location-markers-and-google-maps-directions-ee020f6fd1ec]

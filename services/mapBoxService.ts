@@ -2,14 +2,10 @@
 import Constants from "expo-constants";
 import type { Coords } from "./location";
 
-// refe to Token@ ,env
-const MAPBOX_TOKEN = Constants.expoConfig?.extra?.mapboxToken;
-
-// IF token missing -- Alert
-if (!MAPBOX_TOKEN) {
-  console.warn("⚠️ Missing mapboxToken in app.json -> expo.extra.mapboxToken");
-}
-
+// get token each time we need it (also check EXPO_PUBLIC_ var as a web fallback)
+const getToken = () =>
+  Constants.expoConfig?.extra?.mapboxToken ??
+  (process.env.EXPO_PUBLIC_MAPBOX_TOKEN as string | undefined);
 /** Build a Static Image URL - from MApbox DOc */
 /**Example request: Retrieve a static map using a bounding box with padding
 The bbox parameter can be combined with padding as well. Using the same bounding box from the previous example, this request adds 50 pixels of top padding, 10 pixels of side padding, and 20 pixels of bottom padding.*/
@@ -53,10 +49,22 @@ export function staticMapUrl({
   height?: number;
   style?: string;
   marker?: boolean;
-}): string {
+}): string | null {
+  // refe to Token@ ,env
+  const MAPBOX_TOKEN = getToken();
+  // IF token missing -- Alert
+  if (!MAPBOX_TOKEN) {
+    console.warn(
+      "Missing Mapbox token (expo.extra.mapboxToken or EXPO_PUBLIC_MAPBOX_TOKEN)"
+    );
+    return null;
+  }
+
+  // had to add null
   // chat error/hndling
   if (!MAPBOX_TOKEN) {
-    return "about:blank"; //so not CRASHING!!
+    console.warn("about:blank"); //so not CRASHING!!
+    return null;
   }
   //   fethc + return data
   const base = `https://api.mapbox.com/styles/v1/mapbox/${style}/static`;
@@ -83,6 +91,8 @@ export async function reverseGeocode(
   { latitude, longitude }: Coords,
   lang: string = "en" //type-cEHcks*
 ): Promise<RevGeoCodeRes> {
+  const MAPBOX_TOKEN = getToken(); // passData
+  if (!MAPBOX_TOKEN) throw new Error("No Mapbox token configured.");
   // catcth error/hndling
   if (!MAPBOX_TOKEN) {
     throw new Error(
