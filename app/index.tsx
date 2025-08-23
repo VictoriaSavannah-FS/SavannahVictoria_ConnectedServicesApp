@@ -10,6 +10,9 @@ export default function Home() {
       <Link href="/camera" asChild>
         <Button title="Camera / PhotoOps, anyone?📸" />
       </Link>
+      <Link href="/qr" asChild>
+        <Button title="QR Scanner + Decoder 🔍" />
+      </Link>
       <Link href="/map" asChild>
         <Button title="Map 🗺️ |📍 Location" />
       </Link>
