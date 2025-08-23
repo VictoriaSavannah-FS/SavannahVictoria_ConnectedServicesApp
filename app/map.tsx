@@ -11,6 +11,9 @@ import { View, Text, ActivityIndicator, Button, Image } from "react-native";
 import * as Location from "expo-location";
 import Constants from "expo-constants";
 
+// impeoer maps --nevermidn - wokrs o IOS only / not webb
+// import { AppleMaps, GoogleMaps } from "expo-maps";
+
 // DEfine Tyoes
 type Weather = {
   name: string;
@@ -273,3 +276,5 @@ export default function MapScreen() {
     </View>
   );
 }
+
+// https://docs.expo.dev/versions/latest/sdk/maps/

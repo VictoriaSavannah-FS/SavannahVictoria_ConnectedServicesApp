@@ -34,6 +34,14 @@
     "extra": {
       "weatherApiKey": "71562a9af4dbd9c2587ec4e604d181a6"
     },
-    "plugins": ["expo-barcode-scanner", "expo-camera"]
+    "plugins": [
+      "expo-barcode-scanner",
+      "expo-camera",
+      "expo-maps",
+      {
+        "requestLocationPermission": true,
+        "locationPermission": "Allow $(PRODUCT_NAME) to use your location"
+      }
+    ]
   }
 }
