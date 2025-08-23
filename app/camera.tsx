@@ -13,15 +13,23 @@ import {
 import * as Haptics from "expo-haptics";
 // imrpot camServices
 import cameraService from "../services/cameraService";
+// import mapURi @loc data
+import { staticMapUrl } from "../services/mapboxService";
+// iport @location for Coords?
+import { Coords } from "../services/location";
 
 export default function CameraScreen() {
   const [facing, setFacing] = useState<CameraType>("back");
   const [permission, requestPermission] = useCameraPermissions();
-  // const [picture, takePicture] = useState<CameraType>("Say Cheese!");
-  // use cameraRef from services ----
-  const cameraRef = useRef<CameraView>(null);
-  // fetch latest img metadet
+  const cameraRef = useRef<CameraView>(null); // use cameraRef from services ----
+  // fetch latest img metadet/existing---
   const [lastUri, setLastUri] = useState<string | null>(null);
+
+  // NEW ++ -->> fetch EXIF --> pass to rendr ---
+  const [exif, setExif] = useState<any | null>(null);
+  const [takenAt, setTakenAt] = useState<string | null>(null);
+  const [gps, setGps] = useState<Coords | null>(null);
+  const [mapUrl, setMapUrl] = useState<string | null>(null);
 
   // useRefe into servixe@mount x1
   useEffect(() => {
@@ -29,12 +37,12 @@ export default function CameraScreen() {
   }, []);
 
   if (!permission) {
-    // Camera permissions are still loading.
+    // Camera permissions are still loading...
     return <View />;
   }
 
   if (!permission.granted) {
-    // Camera permissions are not granted yet.
+    // Camera permissions are X not granted yet...
     return (
       <View style={styles.container}>
         <Text style={styles.message}>
@@ -44,13 +52,55 @@ export default function CameraScreen() {
       </View>
     );
   }
-
+  // ----- Toogle Cam
   function toggleCameraFacing() {
     setFacing((current) => (current === "back" ? "front" : "back"));
   }
 
-  // ----- Toogle Cam
-  // (same as toggleCameraFacing — keeping comment but using the single function above)
+  /** EXIF parsers ------
+   * only asking ofr timeStamp and locations
+   */
+  function extractTakenAt(meta: any): string | null {
+    // if No data -null.empty
+    if (!meta) return null;
+    return (
+      meta.DateTimeOriginal ||
+      meta.CreateDate ||
+      meta.DateTime ||
+      meta["{TIFF}"]?.DateTime ||
+      null
+    );
+  }
+  // GETy Location -------
+  function extractGps(meta: any): Coords | null {
+    if (!meta) return null;
+
+    // 1) Already-decimal fields (many devices)
+    const decLat = meta.GPSLatitudeDecimal ?? meta.latitude;
+    const decLon = meta.GPSLongitudeDecimal ?? meta.longitude;
+    if (typeof decLat === "number" && typeof decLon === "number") {
+      return { latitude: decLat, longitude: decLon };
+    }
+
+    // 2) Nested {GPS} block sometimes provided by Expo
+    const gps = meta["{GPS}"];
+    if (
+      gps &&
+      typeof gps.Latitude === "number" &&
+      typeof gps.Longitude === "number"
+    ) {
+      return { latitude: gps.Latitude, longitude: gps.Longitude };
+    }
+
+    // 3) Fallback: plain numbers in GPSLatitude/GPSLongitude
+    if (
+      typeof meta.GPSLatitude === "number" &&
+      typeof meta.GPSLongitude === "number"
+    ) {
+      return { latitude: meta.GPSLatitude, longitude: meta.GPSLongitude };
+    }
+    return null;
+  }
 
   // ----- take Picture ---
   const takePicture = async () => {
@@ -63,6 +113,25 @@ export default function CameraScreen() {
         exif: true,
       });
       setLastUri(photo.uri); //update state
+      setExif(photo.exif ?? null);
+      // Pass new exif data
+      const time = extractTakenAt(photo.exif);
+      const gps = extractGps(photo.exif);
+      // update Sates
+      setTakenAt(time);
+      setGps(gps);
+      setMapUrl(
+        gps
+          ? staticMapUrl({
+              latitude: gps.latitude,
+              longitude: gps.longitude,
+              zoom: 14,
+              width: 600,
+              height: 360,
+              // style: "dark-v11", // optional
+            }) ?? null
+          : null
+      );
 
       // save to lilrabry - iOS
       if (Platform.OS === "web") {
@@ -71,6 +140,7 @@ export default function CameraScreen() {
         await cameraService.saveToMediaLibrary(photo.uri);
         Alert.alert("Saved", "Yay! Your photo was saved to your library!");
       }
+
       // // Web fallback --
       // async function saveWebFallback(uri: string, filename = `photo-${Date.now()}.jpg`) {
       //   // Browser-only download
@@ -102,7 +172,30 @@ export default function CameraScreen() {
         quality: 0.9,
         includeBase64: false,
       });
-      if (asset) setLastUri(asset.uri); //update data /stte
+      if (!asset) return; // err hndler
+      setLastUri(asset.uri); // remember which photo was picked
+      setExif(asset.exif ?? null); // save the whole EXIF metadata block if available
+
+      // PAss Xif props data --from photMEtada
+
+      const time = extractTakenAt(asset.exif);
+      const gps = extractGps(asset.exif);
+      // updte St8ts /w// new data
+      setTakenAt(time);
+      setGps(gps);
+      // REdner a MapBOx Map based @ GPS data ---
+      setMapUrl(
+        // logis -> if props/ pass
+        gps
+          ? staticMapUrl({
+              latitude: gps.latitude,
+              longitude: gps.longitude,
+              zoom: 14,
+              width: 600,
+              height: 360,
+            }) ?? null
+          : null
+      );
     } catch (e: any) {
       Alert.alert("Error", e?.message ?? "failed to pick image...");
     }
@@ -134,7 +227,7 @@ export default function CameraScreen() {
 
       {/* Phot URI / metada dispay --- */}
       {lastUri ? (
-        <View style={{ alignItems: "center", padding: 12 }}>
+        <View style={{ alignItems: "center", padding: 12, gap: 8 }}>
           {/* reder image */}
           <Image
             source={{ uri: lastUri }}
@@ -144,6 +237,26 @@ export default function CameraScreen() {
           <Text numberOfLines={1} style={styles.uri}>
             {lastUri}
           </Text>
+          {/* ADd @timeStamp + if/else*/}
+          <Text style={{ color: "#333" }}>Taken: {takenAt ?? "-"}</Text>
+          {/* @GPS COords -- if/else */}
+          <Text style={{ color: "#333" }}>
+            GPS:
+            {gps
+              ? // limit coord#'s
+                `${gps.latitude.toFixed(5)}, ${gps.longitude.toFixed(5)}`
+              : "—"}
+          </Text>
+          {/* MAPBOX RENDERED!===== else/ null */}
+          {mapUrl ? (
+            <Image
+              source={{ uri: mapUrl }}
+              style={{ width: 300, height: 180, borderRadius: 8 }}
+              resizeMode="cover"
+            />
+          ) : (
+            <Text style={{ color: "#666" }}>No location metadata found.</Text>
+          )}
         </View>
       ) : null}
     </View>

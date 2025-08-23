@@ -93,7 +93,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { decodeQR, DecodedQR } from "../services/qrService";
 
 export default function QRScreen() {
-  // --- ST8 & refs ---
+  // --- ST8t & refs ---
   // camera perm hook (expo handles the OS ask)
   const [permission, requestPermission] = useCameraPermissions();
 

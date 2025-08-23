@@ -22,7 +22,7 @@ import {
   staticMapUrl,
   reverseGeocode,
   type RevGeoCodeRes,
-} from "../services/mapBoxService";
+} from "../services/mapboxService";
 
 // DEfine Tyoes
 type Weather = {
@@ -55,25 +55,25 @@ export default function MapScreen() {
 
   // ---- helpers -----------
 
-  // FetchDAta -----
-  const reqLocation = async () => {
-    // request permission @ pop-up -foreground X background-----
-    const { status } = await Location.requestForegroundPermissionsAsync(); //defiend @ app.json
-    // /IF not granted => "permission denied"
-    if (status !== "granted") {
-      throw new Error("Location Permission denied ❌...");
-    }
-    // IF granted -----
-    const getPos = await Location.getCurrentPositionAsync({
-      // gets let/lon from users phone
-      accuracy: Location.Accuracy.Balanced,
-    });
-    //   retun current @Loaction params
-    return {
-      latitude: getPos.coords.latitude,
-      longitude: getPos.coords.longitude,
-    };
-  };
+  // FetchDAta ----- USing the getUSerLocation from mapxServices! :)
+  // const reqLocation = async () => {
+  //   // request permission @ pop-up -foreground X background-----
+  //   const { status } = await Location.requestForegroundPermissionsAsync(); //defiend @ app.json
+  //   // /IF not granted => "permission denied"
+  //   if (status !== "granted") {
+  //     throw new Error("Location Permission denied ❌...");
+  //   }
+  //   // IF granted -----
+  //   const getPos = await Location.getCurrentPositionAsync({
+  //     // gets let/lon from users phone
+  //     accuracy: Location.Accuracy.Balanced,
+  //   });
+  //   //   retun current @Loaction params
+  //   return {
+  //     latitude: getPos.coords.latitude,
+  //     longitude: getPos.coords.longitude,
+  //   };
+  // };
 
   // Req. fetchWeather ---------
   const getWeather = async (lat: number, lon: number) => {
@@ -187,7 +187,6 @@ export default function MapScreen() {
           }}
         >
           <Text style={{ fontWeight: "700" }}>
-            {" "}
             🥺❌ Couldn’t load map & weather
           </Text>
           <Text style={{ textAlign: "center", color: "#666" }}>{error}</Text>

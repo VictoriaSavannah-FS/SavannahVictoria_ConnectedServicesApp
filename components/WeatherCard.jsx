@@ -10,6 +10,8 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import weatherService from "../services/weatherService";
+
+// this is friim Lesson example ----
 const WeatherCard = ({
   location,
   onLocationPress,

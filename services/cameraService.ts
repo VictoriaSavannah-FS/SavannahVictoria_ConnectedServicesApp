@@ -96,6 +96,13 @@ class CameraService {
       skipProcessing: options.skipProcessing ?? false,
     });
     console.log("📸 Taking photo...");
+    if (photo.exif) {
+      // chceks if EXIF / pic metada exists ==> IF return data
+      console.log("EXIF Metadata:", photo.exif);
+
+      console.log("   GPS:", photo.exif.GPSLatitude, photo.exif.GPSLongitude);
+      console.log("   Timestamp:", photo.exif.DateTimeOriginal);
+    }
     return photo;
   }
 
@@ -137,10 +144,25 @@ class CameraService {
     if (res.canceled) return null; //when X retn null
     // “If res.assets exists, give me the first element ([0]), otherwise return undefined
     const asset = res.assets?.[0] ?? null;
-    if (asset) console.log("Picked image:", asset.uri); // retunr img
+
+    if (asset) {
+      console.log("Picked image:", asset.uri); // retunr img
+      // ADDIng the EXIF / Metada extarctir here -- sicne already targeting props inside
+      // IF exifc datat ==true ==> retuern data
+      if (asset.exif) {
+        console.log("EXIF METADATa:", asset.exif);
+        // defin data needed
+        const takenAt = asset.exif.DateTimeOriginal || asset.exif.DataTime;
+        const gpsLat = asset.exif.GPSLatitude;
+        const gpsLon = asset.exif.GPSLongitude;
+        // pas data returned --> apss to Map Scrern!
+        console.log("📅 Taken:", takenAt);
+        console.log("📍 GPS:", gpsLat, gpsLon);
+      }
+    }
     return asset; //pic@metada
   }
-  // -----  Get file info
+  // -----  Get file info // only cheks if it exists in db/lcoal
   async getFileInfo(uri: string) {
     try {
       const info = await FileSystem.getInfoAsync(uri);
