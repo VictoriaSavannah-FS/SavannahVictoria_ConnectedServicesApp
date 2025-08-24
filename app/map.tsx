@@ -16,7 +16,8 @@ import Constants from "expo-constants";
 // import { AppleMaps, GoogleMaps } from "expo-maps";
 // /import service/locaiton servci
 import { getUserLocation, type Coords } from "../services/location";
-
+// to rednder the freCst---
+import { getForecast, type ForecastItem } from "../services/weatherService";
 // Mapbox helpers / logic- ---
 import {
   staticMapUrl,
@@ -50,9 +51,10 @@ export default function MapScreen() {
   const [place, setPlace] = useState<RevGeoCodeRes>(null); // reverse geocode
 
   const [mapUrl, setMapUrl] = useState<string | null>(null); ///stsic IMG
-
   const [weather, setWeather] = useState<Weather | null>(null);
-
+  // forecst----
+  // const [forecast, setForecast] = useState<ForecastItem[] | null>(null);
+  const [forecast, setForecast] = useState<(ForecastItem | any)[] | null>(null);
   // ---- helpers -----------
 
   // FetchDAta ----- USing the getUSerLocation from mapxServices! :)
@@ -142,6 +144,12 @@ export default function MapScreen() {
       setPlace(addy);
       //   weather fet-----
       await getWeather(latitude, longitude);
+      // fetch Frorecst dta
+      const fc = await getForecast(latitude, longitude, {
+        units: "imperial",
+        take: 4,
+      });
+      setForecast(fc);
     } catch (error: any) {
       setError(
         error?.message ?? "Oh no... something went wrong... shall we try again?"
@@ -219,7 +227,7 @@ export default function MapScreen() {
           source={{ uri: mapUrl }}
           // types - wrong
           //   style={{ width: "80%", height: "200", borderRadius: "10" }}
-          style={{ width: 80, height: 200, borderRadius: 10 }}
+          style={{ width: 300, height: 150, borderRadius: 10 }}
           //   resizeMethod="cover"
           resizeMode="cover"
         />
@@ -254,12 +262,38 @@ export default function MapScreen() {
           </Text>
         </View>
       )}
+      {/* FORECAST — Yeah! */}
+      {forecast && (
+        <View style={{ marginTop: 8, alignItems: "center", gap: 6 }}>
+          <Text style={{ fontWeight: "600" }}>Next 12 hours</Text>
+
+          {forecast.map((f, i) => {
+            // fallback time: ForecastItem vs raw OWM 2.5
+            const ts =
+              (f as any).datetime instanceof Date
+                ? (f as any).datetime
+                : new Date(((f as any).dt ?? 0) * 1000);
+
+            // fallback temp: ForecastItem.temperature.current OR raw.main.temp
+            const temp =
+              (f as any).temperature?.current ?? (f as any).main?.temp ?? null;
+
+            return (
+              <Text key={i} style={{ color: "#555" }}>
+                {ts.toLocaleTimeString([], { hour: "numeric" })}{" "}
+                {temp !== null ? `${Math.round(temp)}°` : "—"}
+              </Text>
+            );
+          })}
+        </View>
+      )}
       <Button title="Refresh" onPress={loadData} />
       {/* WEBB platform == compptibility NOTe ---  */}
       {Platform.OS === "web" && (
         <Text style={styles.webNote}>
           Web tip: Static map works everywhere. For interactive panning/zooming,
-          you’d add Mapbox GL JS separately — not required for this assignment.
+          you’d add Mapbox GL JS separately- and I'm not doign that this time
+          around... not required for this assignment.
         </Text>
       )}
     </View>

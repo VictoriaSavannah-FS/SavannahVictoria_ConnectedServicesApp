@@ -20,18 +20,12 @@ import { saveScan, listScans, type StoredScan } from "../services/qrLib";
 
 export default function QRScreen() {
   // --- ST8t & refs ---
-  // camera perm hook (expo handles the OS ask)
   const [permission, requestPermission] = useCameraPermissions();
-
-  // store the last raw scan result (just type+data)
   const [lastScan, setLastScan] = useState<{
     type: string;
     data: string;
   } | null>(null);
-  // store decoded (human-readable info)
   const [decoded, setDecoded] = useState<DecodedQR | null>(null);
-
-  // scanning toggle (true = scanning is live / false = paused)
   const [scanning, setScanning] = useState(true);
 
   // QR store States--------
@@ -48,11 +42,26 @@ export default function QRScreen() {
     return authListen(setUid);
   }, []);
 
-  // --- side effect ---
+  // --- useEffect --- lol!
   useEffect(() => {
     // if no perms yet... ask user
     if (!permission?.granted) requestPermission();
-  }, [permission?.granted]);
+  }, [permission?.granted, requestPermission]);
+
+  // whnn uid --> signed in --> render Lib---
+  useEffect(() => {
+    if (!uid) return; // need a user id
+    (async () => {
+      setLoadingHistory(true);
+      try {
+        // new signature: listScans({ limit })
+        const items = await listScans({ limit: 10 });
+        setHistory(items);
+      } finally {
+        setLoadingHistory(false);
+      }
+    })();
+  }, [uid]);
 
   // edge case: if hook not ready yet
   if (!permission) return <View />;
@@ -105,14 +114,16 @@ export default function QRScreen() {
     //SAVE to firesTone db!! IF USER -----
     if (uid) {
       try {
-        await saveScan(uid, {
+        //=saveScan(decoded, raw) — no uid arg
+        await saveScan({
           type: deCode.type,
-          label: deCode.label,
           value: deCode.value,
+          label: deCode.label,
           raw: data,
         });
         // refrsh list w/new lsit--
-        loadHistory();
+        const items = await listScans({ limit: 10 });
+        setHistory(items);
       } catch (e) {
         Alert.alert(
           "SAve Failde",
@@ -124,21 +135,7 @@ export default function QRScreen() {
     // decode raw -> friendly info (url/email/etc)
     // setDecoded(decodeQR(data));
   };
-  async function loadHistory() {
-    if (!uid) return; // need a user id
-    setLoadingHistory(true);
-    try {
-      const items = await listScans(uid, { limit: 10 });
-      setHistory(items);
-    } finally {
-      setLoadingHistory(false);
-    }
-  }
 
-  // when uid appears (signed in), load history
-  useEffect(() => {
-    loadHistory();
-  }, [uid]);
   return (
     <View style={styles.container}>
       {/* actual camera view that does scanning */}
