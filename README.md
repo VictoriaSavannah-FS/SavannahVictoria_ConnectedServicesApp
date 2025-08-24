@@ -2,13 +2,41 @@
 
 Repo for a comprehensive mobile application using Expo that demonstrates the core concepts from Module 3.
 
-- Setup instructions (how to run the app and configure APIs)
+## Platforms Testesd on ---
 
-- Firebase setup guide (Functions and Firestore configuration)
+This app was tested on iOS (mobile) and Web (browser) and includes weather integration, map/location services, camera + QR scanning, Firebase authentication, and Firestore storage.
 
-- Testing notes (platforms tested, known issues)
+## FEATURES ---
 
-- Feature list (what works, what doesn't)
+Weather API (OpenWeatherMap):
+
+- Display current weather w/ user’s location
+- Forecast data
+- Location Services (Expo Location + Mapbox):
+- Get user’s current location with permission handling
+- Show location on static maps
+- Reverse geocoding for human-readable addresses
+- Maps Integration: Static Mapbox map on both iOS + Web
+- Error Handling: Graceful handling of denied permissions or API failures
+- Auth: currently using Firebase Anonymosu User enabled
+
+## Device Hardware Accesss
+
+- Camera Integration (Expo Camera):
+- Take photos and scan QR codes
+- Works across mobile and web (browser fallback for QR scanning)
+- QR Code Scanning:
+- Decode URL, email, and phone QR codes types
+- Open directly in browser, email, or phone
+- Save scans to Firestore with timestamps for history view
+- Photo Metadata: "EXIF" (basic) Retrieve location/timestamp data
+
+## Custom Backend Services (Firebase)
+
+- Authentication: Anonymous sign-in via Firebase Auth
+- Firestore Database: Store user preferences and QR scan history
+- API Key Security: Keys stored in Firebase / local .env during dev
+- Functions: Ready for expansion with Firebase Functions as backend proxies
 
 ### Resources
 

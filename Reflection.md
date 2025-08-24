@@ -17,10 +17,52 @@ Firebase: Error (auth/configuration-not-found).
 
 ### How did you handle API key security and Firebase Functions?
 
+I tried to avoid directly hardcoding sensitive API keys into the front end. Instead, I used Firebase Functions as a simple backend proxy. That way my Expo client/frontend can make calls to the defined Firebase endpoints, and Firebase makes the actual requests with the API keys stored securely in environment variables.
+
+For testing and development, I kept a .env file locally with my keys, but for production I relied on Firebase’s built-in config system to manage them.
+
+```bash
+const firebaseConfig = {
+  apiKey: "apiKEy went go here...",
+  authDomain: "connected-services-app.firebaseapp.com",
+  projectId: "connected-services-app",
+  storageBucket: "connected-services-app.firebasestorage.app",
+  messagingSenderId: "params-would-go-here",
+  appId: "app-id-#########",}
+
+```
+
+Once I was able to make some adjusments and installed some necessary dev deps for the server, I was able to setup it correclty.
+
 ### What would you improve with more time?
 
-As always, it seems like the last thing on my mind is the overall style of the app - but rather the fuctionality. Ensuring that my fuctions, componets and logic all work well enough to render and that the app is resposive and fucntional.
+As always, the last thing on my mind was styling. I focused heavily on functionality, making sure my functions, components, and logic all worked correctly. If I had more time, the three main things I would improve are:
 
-So two three main things. Style, theme and overall visual Aesthtics of the app, improve the Layout and fucntionality of rendering of data so it's more visually appealing - imporving overall user experience. Lastly, I'd also like to add more neat little features like the Photo album as part of the Advanced features, but I also understand that it's be a little more involved to exucute (storage, db to fetch and disply stored photo's).
+1.  Visual styling and theme — right now it’s clean but basic. I’d want to improve the overall layout, spacing, and color scheme for better user experience.
+2.  Data presentation — for example, making the weather forecast more visually appealing instead of just text, or formatting the QR history with icons.
+3.  Extra features — I would love to expand into the Photo Album advanced feature, saving pictures with weather + location data, but I know that would require more work with storage and database display logic.
 
 ### What surprised you about device hardware integration?
+
+Honestly, I expected camera and QR features to be harder than they were. Expo’s Camera API and Docs made it surprisingly straightforward to get a working QR scanner running quickly. Especially with the code examples given as a starting point.
+
+The surprise came more from the platform differences: on iOS, camera permissions and rendering worked so smoothly, but on the web there were quirks with browser compatibility and needing certain fallbacks. The other challenge was properly executing the location permissions and how they behaved slightly differently on mobile vs web, which forced me to add extra error handling.
+
+```bash
+# Permisions - iOS prompt worked seamless
+# on Web had to use prompt Alert
+
+const { status } = await Location.requestForegroundPermissionsAsync();
+if (status !== "granted") {
+  setErrorMsg("Permission to access location was denied");
+  return;
+}
+
+# Camera fallback --
+{Platform.OS === "web" && (
+  <Text style={styles.note}>
+    Note: QR scanning on web depends on browser camera support.
+  </Text>)}
+```
+
+Overall, I was surprised at how much easier Expo makes hardware integration, while still requiring careful attention to detail in permissions and cross-platform testing.
