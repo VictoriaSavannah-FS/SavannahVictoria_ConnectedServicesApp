@@ -2,6 +2,14 @@
 
 Repo for a comprehensive mobile application using Expo that demonstrates the core concepts from Module 3.
 
+- Setup instructions (how to run the app and configure APIs)
+
+- Firebase setup guide (Functions and Firestore configuration)
+
+- Testing notes (platforms tested, known issues)
+
+- Feature list (what works, what doesn't)
+
 ### Resources
 
 - [https://docs.expo.dev/guides/using-firebase/]
