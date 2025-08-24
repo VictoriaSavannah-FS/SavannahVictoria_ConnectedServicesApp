@@ -1,82 +1,5 @@
-// // app/qr.tsx
-// import { useEffect, useRef, useState } from "react";
-// import { View, Text, StyleSheet, Alert, Platform } from "react-native";
-// import { CameraView, useCameraPermissions } from "expo-camera";
-
-// export default function QRScreen() {
-//   // def. states/stoer datsa
-//   const [permission, requestPermission] = useCameraPermissions();
-//   const [lastScan, setLastScan] = useState<{
-//     type: string;
-//     data: string;
-//   } | null>(null);
-//   const [scanning, setScanning] = useState(true); //start scan
-//   // cameraService ---
-//   const cameraRef = useRef<CameraView>(null);
-
-//   // Effet --- to fetvh perms + render resutls
-//   useEffect(() => {
-//     // chek if grnadted=> IF not -> ask again...
-//     if (!permission?.granted) requestPermission();
-//   }, [permission?.granted]);
-
-//   if (!permission) return <View />;
-//   if (!permission.granted) {
-//     return (
-//       <View style={styles.center}>
-//         <Text style={styles.msg}>
-//           We need camera permission to scan QR codes.
-//         </Text>
-//       </View>
-//     );
-//   }
-
-//   const onBarcodeScanned = ({ type, data }: { type: string; data: string }) => {
-//     if (!scanning) return;
-//     setScanning(false);
-//     setLastScan({ type, data });
-//     // simple demo behavior
-//     Alert.alert("QR Scanned", data, [
-//       { text: "Scan Again", onPress: () => setScanning(true) },
-//       { text: "OK" },
-//     ]);
-//   };
-
-//   return (
-//     <View style={styles.container}>
-//       <CameraView
-//         ref={cameraRef}
-//         style={styles.camera}
-//         // Only scan QR (you can include others if you want)
-//         barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-//         onBarcodeScanned={onBarcodeScanned}
-//       />
-//       <View style={styles.result}>
-//         <Text style={styles.title}>Last Scan</Text>
-//         <Text style={styles.text}>
-//           {lastScan ? `${lastScan.type}: ${lastScan.data}` : "—"}
-//         </Text>
-//         {Platform.OS === "web" && (
-//           <Text style={styles.note}>
-//             Note: QR scanning on web depends on browser camera support.
-//           </Text>
-//         )}
-//       </View>
-//     </View>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   container: { flex: 1, backgroundColor: "#000" },
-//   camera: { flex: 1 },
-//   result: { padding: 16, backgroundColor: "#fff" },
-//   title: { fontWeight: "700", marginBottom: 4 },
-//   text: { color: "#333" },
-//   note: { marginTop: 6, fontSize: 12, color: "#666" },
-//   center: { flex: 1, alignItems: "center", justifyContent: "center" },
-//   msg: { padding: 16, textAlign: "center" },
-// });
-
+// import auth==userID
+import { authListen } from "../services/firebaseConfig";
 // app/qr.tsx
 import { useEffect, useRef, useState } from "react";
 import {
@@ -91,6 +14,9 @@ import {
 import { CameraView, useCameraPermissions } from "expo-camera";
 // pull in my qr helper fns (decode raw string -> friendly info)
 import { decodeQR, DecodedQR } from "../services/qrService";
+
+// SAVE QR Scans! -- yeah!
+import { saveScan, listScans, type StoredScan } from "../services/qrLib";
 
 export default function QRScreen() {
   // --- ST8t & refs ---
@@ -108,8 +34,19 @@ export default function QRScreen() {
   // scanning toggle (true = scanning is live / false = paused)
   const [scanning, setScanning] = useState(true);
 
+  // QR store States--------
+  const [history, setHistory] = useState<StoredScan[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
   // ref to actual camera component
   const cameraRef = useRef<CameraView>(null);
+  // ---------- added--> Auth for userId
+
+  const [uid, setUid] = useState<string | null>(null);
+  useEffect(() => {
+    //singIn first to get userID---
+    return authListen(setUid);
+  }, []);
 
   // --- side effect ---
   useEffect(() => {
@@ -150,15 +87,58 @@ export default function QRScreen() {
   };
 
   // --- handler: when camera sees a QR code ---
-  const onBarcodeScanned = ({ type, data }: { type: string; data: string }) => {
+  const onBarcodeScanned = async ({
+    type,
+    data,
+  }: {
+    type: string;
+    data: string;
+  }) => {
     if (!scanning) return; // skip if paused
-    setScanning(false); // stop scanning after 1 result (no spam flood)
+    setScanning(false); // stop scanning @/fter 1 result
     setLastScan({ type, data }); // store raw
 
-    // decode raw -> friendly info (url/email/etc)
-    setDecoded(decodeQR(data));
-  };
+    // pass (data) => set cosnt to hodl decoded QR data ---
+    const deCode = decodeQR(data);
+    setDecoded(deCode);
 
+    //SAVE to firesTone db!! IF USER -----
+    if (uid) {
+      try {
+        await saveScan(uid, {
+          type: deCode.type,
+          label: deCode.label,
+          value: deCode.value,
+          raw: data,
+        });
+        // refrsh list w/new lsit--
+        loadHistory();
+      } catch (e) {
+        Alert.alert(
+          "SAve Failde",
+          "I'm sorry but couldn't save scan to QR Library..."
+        );
+      }
+    }
+
+    // decode raw -> friendly info (url/email/etc)
+    // setDecoded(decodeQR(data));
+  };
+  async function loadHistory() {
+    if (!uid) return; // need a user id
+    setLoadingHistory(true);
+    try {
+      const items = await listScans(uid, { limit: 10 });
+      setHistory(items);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }
+
+  // when uid appears (signed in), load history
+  useEffect(() => {
+    loadHistory();
+  }, [uid]);
   return (
     <View style={styles.container}>
       {/* actual camera view that does scanning */}
@@ -171,7 +151,7 @@ export default function QRScreen() {
         onBarcodeScanned={scanning ? onBarcodeScanned : undefined}
       />
 
-      {/* --- Result box under camera --- */}
+      {/* --- Result @ under camera --- */}
       <View style={styles.result}>
         <Text style={styles.title}>Decoded Result</Text>
 
@@ -204,7 +184,28 @@ export default function QRScreen() {
         ) : (
           <Text style={styles.text}>—</Text>
         )}
-
+        {/* --- History list --- */}
+        <View style={styles.historyBox}>
+          <Text style={styles.title}>Scan History</Text>
+          {!uid && <Text style={styles.text}>Sign in to save history.</Text>}
+          {uid &&
+            (loadingHistory ? (
+              <Text style={styles.text}>Loading…</Text>
+            ) : history.length === 0 ? (
+              <Text style={styles.text}>No scans yet.</Text>
+            ) : (
+              history.map((h) => (
+                <View key={h.id} style={styles.historyItem}>
+                  <Text style={styles.text}>
+                    {h.label}: {h.value || "—"}
+                  </Text>
+                  <Text style={styles.meta}>
+                    {new Date(h.createdAt).toLocaleString()}
+                  </Text>
+                </View>
+              ))
+            ))}
+        </View>
         {/* raw scan value (for debug) */}
         <Text style={[styles.title, { marginTop: 12 }]}>Raw Scan</Text>
         <Text style={styles.text}>
@@ -237,11 +238,13 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000" },
   camera: { flex: 1 },
   result: { padding: 16, backgroundColor: "#fff" },
+  // text---
   title: { fontWeight: "700", marginBottom: 4 },
   text: { color: "#333" },
   note: { marginTop: 6, fontSize: 12, color: "#666" },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   msg: { padding: 16, textAlign: "center" },
+  // btsn ----
   actionBtn: {
     marginTop: 10,
     paddingVertical: 10,
@@ -251,4 +254,18 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   actionBtnText: { color: "white", fontWeight: "600" },
+  // styles for QR Linbray-----
+  historyBox: {
+    marginTop: 16,
+    backgroundColor: "#fff",
+    padding: 16,
+    borderTopWidth: 1,
+    borderColor: "#eee",
+  },
+  historyItem: {
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: "#eee",
+  },
+  meta: { fontSize: 12, color: "#666", marginTop: 2 },
 });
