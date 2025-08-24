@@ -43,7 +43,8 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 12, // works in RN 0.71+ and Expo SDK 49+ (otherwise use margin)
+    gap: 12,
+    padding: 16,
   },
   // text--
   statusText: {
@@ -51,7 +52,11 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   uidText: {
-    color: "white",
+    // make UID stand out
+    color: "black",
+    fontWeight: "bold",
+    fontSize: 14,
+    marginBottom: 8, // space before the button
   },
   btn: {
     backgroundColor: "#666",

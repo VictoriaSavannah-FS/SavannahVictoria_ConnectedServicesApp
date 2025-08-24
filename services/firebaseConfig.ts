@@ -1,4 +1,4 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApp, getApps } from "firebase/app";
 import {
   getAuth,
   signInAnonymously,
@@ -6,14 +6,19 @@ import {
   signOut,
 } from "firebase/auth";
 
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "fake-placeholder-ok-for-class",
+  apiKey: "AIzaSyAnS7HzklAUL8sS5qbZh6oeUSLQUMJWaPg",
   authDomain: "connected-services-app.firebaseapp.com",
   projectId: "connected-services-app",
-  appId: "1:1234567890:web:abc123",
+  storageBucket: "connected-services-app.firebasestorage.app",
+  messagingSenderId: "562315486266",
+  appId: "1:562315486266:web:eea180451280351df6c103",
 };
-// Start App --- lainch
-const app = initializeApp(firebaseConfig);
+// Start App --- lainch from @firebase lib
+// Prevent re-init during Fast Refresh
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+
 export const auth = getAuth(app);
 
 // -- AUth State ----

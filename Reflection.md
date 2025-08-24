@@ -8,6 +8,13 @@
 const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=$
 ```
 
+Laslty! The one gotcha was that I actually had to activte and enable the Anonymous User Profile Permission on the Firebase console first before actaully trying to test it and use it my project. Which is why it kept failing each time I was trying to Sign into the Profile screen:
+
+```bash
+# Error Mesage ----
+Firebase: Error (auth/configuration-not-found).
+```
+
 ### How did you handle API key security and Firebase Functions?
 
 ### What would you improve with more time?
